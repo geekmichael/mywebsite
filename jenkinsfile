@@ -1,0 +1,31 @@
+pipeline {
+    agent any
+    stages{
+        stage("Clean the Workspace"){
+            steps{
+                sh 'rm -rf *'
+            }
+        }
+        stage("Clone the Repo"){
+            steps{
+                sh 'git clone https://github.com/geekmichael/mywebsite.git xyz'
+            }
+        }
+        stage("Push to the remote web server"){
+            steps{
+                withCredentials([
+                    sshUserPrivateKey(credentialsId: 'xyz-geekmichael', keyFileVariable: 'PK'),
+                    string(credentialsId: 'xyz-server-ip', variable: 'SERVER')
+                ]) {
+                    sh 'scp -O -o LogLevel=Error -o "UserKnownHostsFile=/dev/null" -o StrictHostKeyChecking=no -i $PK xyz/index.html $SERVER:/opt/webroot/'
+                }
+            }
+        }
+        stage("Check the website is up"){
+            steps{
+                echo "Check the website is up"
+                sh 'curl -Is https://xyz.geekmichael.com | head -n 1'
+            }
+        }
+    }
+}
